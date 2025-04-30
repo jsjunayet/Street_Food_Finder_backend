@@ -18,13 +18,12 @@ model User {
 id String @id @default(uuid())
 email String @unique
 password String
-role UserRole
+role UserRole @default(USER)
 createdAt DateTime @default(now())
 updatedAt DateTime @updatedAt
 }
 
 enum UserRole {
-NORMAL_USER
-PREMIUM_USER
+USER
 ADMIN
 }
