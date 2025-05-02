@@ -22,6 +22,33 @@ const postGetData = async () =>{
   const result = await prisma.post.findMany();
     return result
 }
+const postGetUserData = async (user:any) =>{
+  const exitUser = await prisma.user.findUniqueOrThrow({
+    where:{
+      id:user.id
+    },include:{
+      subscription:true,
+      posts:true
+    }
+  })
+  let result
+  if(exitUser.isPremium && exitUser.subscription?.paymentStatus){
+    result = await prisma.post.findMany({
+      where:{
+        approved:true
+      }
+    })
+  }else{
+    result = await prisma.post.findMany({
+      where:{
+        approved:true,
+        isPremium:false
+      }
+    })
+  }
+
+    return result
+}
 const postSingleGetData = async (postId:string) =>{
   const result = await prisma.post.findUniqueOrThrow({
       where:{
@@ -31,23 +58,35 @@ const postSingleGetData = async (postId:string) =>{
     return result
 }
 const postPremiumGetData = async (postId:string) =>{
+  const exitPost = await prisma.post.findUniqueOrThrow({
+    where:{
+      id:postId
+    }
+  })
+  const isPremium = exitPost.isPremium==false?true:false
   const result = await prisma.post.update({
       where:{
           id: postId
       },
       data: {
-        isPremium:true
+        isPremium:isPremium
       }
     });
     return result
 }
 const postApprovedGetData = async (postId:string) =>{
+  const exitPost = await prisma.post.findUniqueOrThrow({
+    where:{
+      id:postId
+    }
+  })
+  const isApproved = exitPost.approved==false?true:false
   const result = await prisma.post.update({
       where:{
           id: postId
       },
       data: {
-        approved:true
+        approved:isApproved
       }
     });
     return result
@@ -66,5 +105,6 @@ export const postService = {
   postSingleGetData,
   postDeletedGetData,
   postApprovedGetData,
-  postPremiumGetData
+  postPremiumGetData,
+  postGetUserData
 }

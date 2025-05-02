@@ -23,6 +23,16 @@ const postGetData = catchAsync(async(req:Request, res:Response)=>{
     data: result
    })
 })
+const postGetUserData = catchAsync(async(req:Request, res:Response)=>{
+    const user = req.user as JwtPayload
+    const result = await postService.postGetUserData(user, req.query)
+   sendResponse(res,{
+    statusCode: 200,
+    success: true,
+    message: 'All post retrieve successfully',
+    data: result
+   })
+})
 const postSingleGetData = catchAsync(async(req:Request, res:Response)=>{
     const postId = req.params.id
     const result = await postService.postSingleGetData(postId)
@@ -69,5 +79,6 @@ export const postController={
     postSingleGetData,
     postDeletedGetData,
     postPremiumGetData,
-    postApprovedGetData
+    postApprovedGetData,
+    postGetUserData
 }
