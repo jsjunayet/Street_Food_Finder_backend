@@ -13,7 +13,39 @@ const commentCreate = catchAsync(async (req: Request, res: Response) => {
     data: result,
   });
 });
+const commentUpdate = catchAsync(async (req: Request, res: Response) => {
+  const userId = req.params.id;
+  const result = await commentService.commentUpdate(userId, req.body);
+  sendResponse(res, {
+    statusCode: 200,
+    success: true,
+    message: "comment Updated successfully",
+    data: result,
+  });
+});
+const commentdeleted = catchAsync(async (req: Request, res: Response) => {
+  const userId = req.params.id;
+  const result = await commentService.commentdeleted(userId);
+  sendResponse(res, {
+    statusCode: 200,
+    success: true,
+    message: "comment deleted successfully",
+    data: result,
+  });
+});
+const commentGet = catchAsync(async (req: Request, res: Response) => {
+  const result = await commentService.commentGet();
+  sendResponse(res, {
+    statusCode: 200,
+    success: true,
+    message: "comment retrieve successfully",
+    data: result,
+  });
+});
 
 export const commentController = {
+  commentUpdate,
+  commentdeleted,
   commentCreate,
+  commentGet,
 };

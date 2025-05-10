@@ -1,11 +1,25 @@
-import express, { Request, Response } from 'express';
-import router from './app/router';
-const app = express()
+import express, { NextFunction, Request, Response } from "express";
+import router from "./app/router";
+import { sendResponse } from "./app/share/sendResponse";
 
-app.use(express.json())
-app.get('/', (req:Request, res:Response)=>{
-    res.send({message:"assignment-09 start!"})
-})
+const app = express();
 
-app.use('/api/v1', router)
-export default app
+app.use(express.json());
+
+app.get("/", (req: Request, res: Response) => {
+  res.send({ message: "assignment-09 start!" });
+});
+
+app.use("/api/v1", router);
+
+// ✅ Error handler
+app.use((error: any, req: Request, res: Response, next: NextFunction) => {
+  sendResponse(res, {
+    statusCode: 500,
+    success: false,
+    message: error.message || "Something went wrong!",
+    data: error,
+  });
+});
+
+export default app;

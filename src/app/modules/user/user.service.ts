@@ -1,195 +1,303 @@
-import { PrismaClient, User } from "@prisma/client"
+import { PrismaClient, User } from "@prisma/client";
+import bcrypt from "bcrypt";
 import jwt, { JwtPayload } from "jsonwebtoken";
-import bcrypt from 'bcrypt';
 import { makePaymentAsync, verifyPaymentAsync } from "./premiumUser";
-const prisma = new PrismaClient()
-const RegisterUser = async (payload:User) => {
-    const passwordHash = await bcrypt.hash(payload.password, 10);
-    const result = await prisma.user.create({
-      data: {
-        email: payload.email,
-        password: passwordHash,
-        role: payload.role,
-      },
-    });
-    const { password, ...userWithoutPassword } = result;
-    return userWithoutPassword;
+const prisma = new PrismaClient();
+const RegisterUser = async (payload: User) => {
+  const passwordHash = await bcrypt.hash(payload.password, 10);
+  const result = await prisma.user.create({
+    data: {
+      email: payload.email,
+      image: payload.image,
+      name: payload.name,
+      password: passwordHash,
+      role: payload.role,
+    },
+  });
+  const { password, ...userWithoutPassword } = result;
+  return userWithoutPassword;
+};
+const loginUser = async (payload: Partial<User>) => {
+  const { email, password } = payload;
+
+  const existingUser = await prisma.user.findUnique({
+    where: { email },
+  });
+
+  if (!existingUser) {
+    throw new Error("User not found");
+  }
+
+  const isPasswordValid = await bcrypt.compare(
+    password as string,
+    existingUser.password
+  );
+  if (!isPasswordValid) {
+    throw new Error("Invalid password");
+  }
+
+  const accessToken = jwt.sign(
+    {
+      id: existingUser.id,
+      email: existingUser.email,
+      role: existingUser.role,
+      image: existingUser.image,
+      name: existingUser.name,
+      isPremium: existingUser.isPremium,
+    },
+    (process.env.ACCESS_TOKEN_SECRET as string) || "access-secret",
+    {
+      expiresIn: "7d", // shorter expiry for access token
+    }
+  );
+
+  const refreshToken = jwt.sign(
+    {
+      id: existingUser.id,
+      email: existingUser.email,
+      role: existingUser.role,
+      image: existingUser.image,
+      name: existingUser.name,
+      isPremium: existingUser.isPremium,
+    },
+    (process.env.REFRESH_TOKEN_SECRET as string) || "refresh-secret",
+    {
+      expiresIn: "7d",
+    }
+  );
+
+  return {
+    accessToken,
+    refreshToken,
   };
-  const loginUser = async (payload: Partial<User>) => {
-    const { email, password } = payload;
-  
-    // 1. Check if user exists
-    const existingUser = await prisma.user.findUnique({
-      where: { email },
-    });
-    console.log(existingUser);
-  
-    if (!existingUser) {
-      throw new Error("User not found");
-    }
-  
-    // 2. Check password
-    const isPasswordValid = await bcrypt.compare(password as string, existingUser.password);
-    if (!isPasswordValid) {
-      throw new Error("Invalid password");
-    }
-    const accessToken = jwt.sign(
-      {
-        id: existingUser.id,
-        email: existingUser.email,
-        role: existingUser.role,
-        isPremium: existingUser.isPremium
-      },
-     '112sfjdlsasfff',
-      {
-        expiresIn: "7d", 
-      }
-    );
-    return {accessToken};
+};
+
+const premiumUser = async (
+  client_ip: string | undefined,
+  user: JwtPayload,
+  payload
+) => {
+  const existingUser = await prisma.user.findUnique({
+    where: { id: user.id },
+    include: { subscription: true },
+  });
+
+  if (existingUser?.isPremium) {
+    throw new Error("User is already a Premium member");
+  }
+
+  // Step 1: Create or update subscription (if already exists)
+  const subscription = await prisma.subscription.upsert({
+    where: { userId: user.id },
+    update: {
+      paymentStatus: false,
+      paymentMethod: "ShurjoPay",
+      subscriptedAt: new Date(),
+      updatedAt: new Date(),
+    },
+    create: {
+      userId: user.id,
+      paymentStatus: false,
+      paymentMethod: "ShurjoPay",
+      subscriptedAt: new Date(),
+    },
+  });
+
+  // Step 2: Prepare payment payload
+  const shurjopayPayload = {
+    amount: payload.amount,
+    order_id: user.id,
+    currency: "BDT",
+    customer_name: payload.name,
+    customer_address: payload.address,
+    customer_email: payload.email,
+    customer_phone: payload.phone,
+    customer_city: payload.city,
+    client_ip,
   };
-  
-  const premiumUser = async (client_ip: string | undefined, user: JwtPayload) => {
-    const existingUser = await prisma.user.findUnique({
-      where: { id: user.id },
+
+  // Step 3: Make payment
+  const payment = await makePaymentAsync(shurjopayPayload);
+
+  if (!payment?.checkout_url) {
+    throw new Error("Payment initiation failed");
+  }
+
+  return {
+    success: true,
+    checkoutUrl: payment.checkout_url,
+  };
+};
+
+export const verifyPremiumPayment = async (user_id: string, user) => {
+  console.log(user_id, user.id, "this is perfect");
+  const verified = await verifyPaymentAsync(user_id);
+  console.log(verified);
+  if (!verified.length) {
+    throw new Error("Payment verification failed");
+  }
+
+  const info = verified[0];
+
+  // Handle Success, Failed, or Cancelled
+  if (info.bank_status === "Success") {
+    const result = await prisma.$transaction(async (tx) => {
+      const subscription = await tx.subscription.update({
+        where: {
+          userId: user.id,
+        },
+        data: {
+          userId: user.id,
+          paymentStatus: true,
+          paymentMethod: info.method || "ShurjoPay",
+          subscriptedAt: new Date(info.date_time),
+        },
+      });
+
+      await tx.user.update({
+        where: { id: user.id },
+        data: {
+          isPremium: true,
+          subscription: {
+            connect: { id: subscription.id },
+          },
+        },
+      });
     });
-  
-    if (existingUser?.isPremium) {
-      throw new Error("User is already a Premium member");
-    }
-  
-    const shurjopayPayload = {
-      amount: "1000",
-      order_id: user.id, // used as reference in verify
-      currency: "BDT",
-      customer_name: "Premium User",
-      customer_address: "Unknown",
-      customer_email: user.email,
-      customer_phone: "01640000000", // optional
-      customer_city: "Dhaka",
-      client_ip,
-    };
-  
-    const payment = await makePaymentAsync(shurjopayPayload);
-  
-    if (!payment?.checkout_url) {
-      throw new Error("Payment initiation failed");
-    }
-  
     return {
       success: true,
-      checkoutUrl: payment.checkout_url,
+      status: "Success",
+      message: "User is now a Premium member",
     };
-  };
-
-  export const verifyPremiumPayment = async (user_id: string) => {
-    const verified = await verifyPaymentAsync(user_id);
-  console.log(verified);
-    if (!verified.length) {
-      throw new Error("Payment verification failed");
-    }
-  
-    const info = verified[0];
-  
-    // Handle Success, Failed, or Cancelled
-    if (info.bank_status === "Success") {
-   const result = await prisma.$transaction(async(tx)=>{
-    const subscription = await tx.subscription.create({
-      data: {
-        userId: info.customer_order_id,
-        paymentStatus: true,
-        paymentMethod: info.method || "ShurjoPay",
-        subscriptedAt: new Date(info.date_time),
-      },
-    });
-
-    await tx.user.update({
-      where: { id: info.customer_order_id },
-      data: {
-        isPremium: true,
-        subscription: {
-          connect: { id: subscription.id },
-        },
-      },
-    });
-   })
-      return {
-        success: true,
-        status: "Success",
-        message: "User is now a Premium member",
-      };
-    } else if (info.bank_status === "Failed") {
-      return {
-        success: false,
-        status: "Failed",
-        message: "Payment failed. Please try again.",
-      };
-    } else if (info.bank_status === "Cancel") {
-      return {
-        success: false,
-        status: "Cancelled",
-        message: "Payment was cancelled.",
-      };
-    }
-  
+  } else if (info.bank_status === "Failed") {
     return {
       success: false,
-      status: info.bank_status,
-      message: "Unknown payment status.",
+      status: "Failed",
+      message: "Payment failed. Please try again.",
     };
-  };
-  const getAllUser = async()=>{
-    const result = await prisma.user.findMany({
-      include:{
-        subscription:true
-      }
-    })
-    return result
+  } else if (info.bank_status === "Cancel") {
+    return {
+      success: false,
+      status: "Cancelled",
+      message: "Payment was cancelled.",
+    };
   }
-  const getSingleUser = async(userId:string)=>{
-    const result = await prisma.user.findUniqueOrThrow({
-   where:{
-    id:userId
-   },include:{
-    subscription:true
-   }
-    })
-    return result
-  }
-  const roleUpdate = async( userId:string)=>{
-    const exitUser = await prisma.user.findFirstOrThrow({
-      where:{
-        id:userId
-      }
-    })
 
-    const RoleUpate = exitUser.role=="USER"?"ADMIN":"USER"
-    const result = await prisma.user.update({
-   where:{
-    id:userId
-   },
-   data:{
-    role:RoleUpate
-   }
-    })
-    return result
+  return {
+    success: false,
+    status: info.bank_status,
+    message: "Unknown payment status.",
+  };
+};
+const getAllUser = async () => {
+  const result = await prisma.user.findMany({
+    include: {
+      subscription: true,
+    },
+  });
+  return result;
+};
+const getSingleUser = async (userId: string) => {
+  const result = await prisma.user.findUniqueOrThrow({
+    where: {
+      id: userId,
+    },
+    include: {
+      subscription: true,
+    },
+  });
+  return result;
+};
+const getSingleUserToken = async (user: string) => {
+  const result = await prisma.user.findUniqueOrThrow({
+    where: {
+      id: user.id,
+    },
+    include: {
+      subscription: true,
+    },
+  });
+  return result;
+};
+const roleUpdate = async (userId: string, payload) => {
+  console.log(payload.role);
+  const exitUser = await prisma.user.findFirstOrThrow({
+    where: {
+      id: userId,
+    },
+  });
+
+  const result = await prisma.user.update({
+    where: {
+      id: userId,
+    },
+    data: {
+      role: payload.role,
+    },
+  });
+  return result;
+};
+const deletedUser = async (userId: string) => {
+  const result = await prisma.user.delete({
+    where: {
+      id: userId,
+    },
+  });
+  return result;
+};
+const subscription = async (user: string) => {
+  const result = await prisma.subscription.findUniqueOrThrow({
+    where: {
+      userId: user.id,
+    },
+    include: {
+      user: true,
+    },
+  });
+  return result;
+};
+const refreshAccessToken = async (refreshToken: string) => {
+  const decoded = jwt.verify(
+    refreshToken,
+    (process.env.REFRESH_TOKEN_SECRET as string) || "refresh-secret"
+  ) as JwtPayload;
+
+  const user = await prisma.user.findUnique({
+    where: { id: decoded.id },
+  });
+
+  if (!user) {
+    throw new Error("User not found");
   }
-  const deletedUser = async(userId:string)=>{
-    const result = await prisma.user.delete({
-   where:{
-    id:userId
-   }
-    })
-    return result
-  }
-  
-  
-  export const userService ={
-    premiumUser,
-      RegisterUser,
-      loginUser,
-      verifyPremiumPayment,
-      getAllUser,
-      getSingleUser,
-     roleUpdate,
-     deletedUser
-  }
+
+  const newAccessToken = jwt.sign(
+    {
+      id: existingUser.id,
+      email: existingUser.email,
+      role: existingUser.role,
+      image: existingUser.image,
+      name: existingUser.name,
+      isPremium: existingUser.isPremium,
+    },
+    (process.env.ACCESS_TOKEN_SECRET as string) || "access-secret",
+    {
+      expiresIn: "15m",
+    }
+  );
+
+  return { accessToken: newAccessToken };
+};
+
+export const userService = {
+  premiumUser,
+  RegisterUser,
+  loginUser,
+  verifyPremiumPayment,
+  getAllUser,
+  getSingleUser,
+  roleUpdate,
+  deletedUser,
+  refreshAccessToken,
+  subscription,
+  getSingleUserToken,
+};

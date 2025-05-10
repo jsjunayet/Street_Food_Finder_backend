@@ -13,7 +13,46 @@ const commentCreate = async (payload, userId) => {
   });
   return result;
 };
+const commentUpdate = async (commentId, payload) => {
+  const result = await prisma.comments.update({
+    where: {
+      id: commentId,
+    },
+    data: {
+      commentText: payload.commentText,
+    },
+  });
+  return result;
+};
+const commentdeleted = async (commentId) => {
+  const result = await prisma.comments.delete({
+    where: {
+      id: commentId,
+    },
+  });
+  return result;
+};
+const commentGet = async () => {
+  const result = await prisma.comments.findMany({
+    include: {
+      user: {
+        select: {
+          email: true,
+        },
+      },
+      post: {
+        select: {
+          title: true,
+        },
+      },
+    },
+  });
+  return result;
+};
 
 export const commentService = {
   commentCreate,
+  commentUpdate,
+  commentdeleted,
+  commentGet,
 };

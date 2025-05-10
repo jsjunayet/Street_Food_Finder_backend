@@ -3,6 +3,7 @@ import { prisma } from "../../share/prismaClient";
 
 const voteCreate = async (payload, userId) => {
   const { postId, vote } = payload;
+  console.log(payload);
 
   const existingVote = await prisma.votes.findUnique({
     where: {

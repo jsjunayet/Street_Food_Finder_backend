@@ -34,24 +34,36 @@ const postGetUserData = async (user: any) => {
   if (exitUser.isPremium && exitUser.subscription?.paymentStatus) {
     Posts = await prisma.post.findMany({
       where: {
-        approved: true,
+        status: "approved",
       },
       include: {
         votes: true,
-        comments: true,
+        comments: {
+          include: {
+            user: true,
+          },
+        },
         ratings: true,
+        user: true,
+        category: true,
       },
     });
   } else {
     Posts = await prisma.post.findMany({
       where: {
-        approved: true,
+        status: "approved",
         isPremium: false,
       },
       include: {
         votes: true,
-        comments: true,
+        comments: {
+          include: {
+            user: true,
+          },
+        },
         ratings: true,
+        user: true,
+        category: true,
       },
     });
   }
@@ -60,10 +72,20 @@ const postGetUserData = async (user: any) => {
     const upVotes = post.votes.filter((v) => v.vote === "UP").length;
     const downVotes = post.votes.filter((v) => v.vote === "DOWN").length;
 
+    const totalRatings = post.ratings.length;
+    const averageRating =
+      totalRatings > 0
+        ? post.ratings.reduce((sum, r) => sum + r.rating, 0) / totalRatings
+        : 0;
+
+    const totalComments = post.comments.length;
+
     return {
       ...post,
       upVotes,
       downVotes,
+      averageRating: Number(averageRating.toFixed(1)),
+      totalComments,
     };
   });
 
@@ -94,19 +116,18 @@ const postPremiumGetData = async (postId: string) => {
   });
   return result;
 };
-const postApprovedGetData = async (postId: string) => {
+const postApprovedGetData = async (postId: string, payload: Partial<Post>) => {
   const exitPost = await prisma.post.findUniqueOrThrow({
     where: {
       id: postId,
     },
   });
-  const isApproved = exitPost.approved == false ? true : false;
   const result = await prisma.post.update({
     where: {
       id: postId,
     },
     data: {
-      approved: isApproved,
+      status: payload.status,
     },
   });
   return result;
