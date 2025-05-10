@@ -1,8 +1,9 @@
 // services/comment.service.ts
 
+import { Comments } from "@prisma/client";
 import { prisma } from "../../share/prismaClient";
 
-const commentCreate = async (payload, userId) => {
+const commentCreate = async (payload: Comments, userId: string) => {
   const { postId, commentText } = payload;
   const result = await prisma.comments.create({
     data: {
@@ -13,7 +14,7 @@ const commentCreate = async (payload, userId) => {
   });
   return result;
 };
-const commentUpdate = async (commentId, payload) => {
+const commentUpdate = async (commentId: string, payload: Partial<Comments>) => {
   const result = await prisma.comments.update({
     where: {
       id: commentId,
@@ -24,7 +25,7 @@ const commentUpdate = async (commentId, payload) => {
   });
   return result;
 };
-const commentdeleted = async (commentId) => {
+const commentdeleted = async (commentId: string) => {
   const result = await prisma.comments.delete({
     where: {
       id: commentId,

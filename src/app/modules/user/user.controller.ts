@@ -24,8 +24,9 @@ const getSingleUser = catchAsync(async (req: Request, res: Response) => {
   });
 });
 const getSingleUserToken = catchAsync(async (req: Request, res: Response) => {
-  const user = req.user;
-  const result = await userService.getSingleUserToken(user);
+  const user = req?.user as JwtPayload;
+
+  const result = await userService.getSingleUserToken(user.id);
   sendResponse(res, {
     statusCode: 200,
     success: true,
@@ -75,6 +76,7 @@ const loginUser = catchAsync(async (req: Request, res: Response) => {
 const PremiumUser = catchAsync(async (req: Request, res: Response) => {
   const payload = req.body;
   const user = req?.user as JwtPayload;
+
   const result = await userService.premiumUser(req.ip, user, payload);
   sendResponse(res, {
     statusCode: 200,
@@ -85,8 +87,9 @@ const PremiumUser = catchAsync(async (req: Request, res: Response) => {
 });
 const verifyPremiumPayment = catchAsync(async (req: Request, res: Response) => {
   const userId = req?.query.order_id as string;
-  const user = req.user;
-  const result = await userService.verifyPremiumPayment(userId, user);
+  const user = req.user as JwtPayload;
+
+  const result = await userService.verifyPremiumPayment(userId, user.id);
   sendResponse(res, {
     statusCode: 200,
     success: true,
@@ -95,8 +98,8 @@ const verifyPremiumPayment = catchAsync(async (req: Request, res: Response) => {
   });
 });
 const subscription = catchAsync(async (req: Request, res: Response) => {
-  const user = req?.user as string;
-  const result = await userService.subscription(user);
+  const user = req?.user as JwtPayload;
+  const result = await userService.subscription(user.id);
   sendResponse(res, {
     statusCode: 200,
     success: true,

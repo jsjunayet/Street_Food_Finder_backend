@@ -1,9 +1,9 @@
 // services/vote.service.ts
+import { Votes } from "@prisma/client";
 import { prisma } from "../../share/prismaClient";
 
-const voteCreate = async (payload, userId) => {
+const voteCreate = async (payload: Votes, userId: string) => {
   const { postId, vote } = payload;
-  console.log(payload);
 
   const existingVote = await prisma.votes.findUnique({
     where: {

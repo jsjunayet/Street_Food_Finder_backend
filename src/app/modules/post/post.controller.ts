@@ -25,12 +25,20 @@ const postGetData = catchAsync(async (req: Request, res: Response) => {
 });
 const postGetUserData = catchAsync(async (req: Request, res: Response) => {
   const user = req.user as JwtPayload;
-  console.log(user);
-  const result = await postService.postGetUserData(user, req.query);
+  const result = await postService.postGetUserData(user);
   sendResponse(res, {
     statusCode: 200,
     success: true,
     message: "All post retrieve successfully",
+    data: result,
+  });
+});
+const postGetUserGestUser = catchAsync(async (req: Request, res: Response) => {
+  const result = await postService.postGetUserGestUser();
+  sendResponse(res, {
+    statusCode: 200,
+    success: true,
+    message: " retrieve successfully",
     data: result,
   });
 });
@@ -83,4 +91,5 @@ export const postController = {
   postPremiumGetData,
   postApprovedGetData,
   postGetUserData,
+  postGetUserGestUser,
 };

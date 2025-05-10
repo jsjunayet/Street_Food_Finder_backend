@@ -1,8 +1,9 @@
 // services/rating.service.ts
 
+import { Ratings } from "@prisma/client";
 import { prisma } from "../../share/prismaClient";
 
-const ratingCreate = async (payload, userId) => {
+const ratingCreate = async (payload: Ratings, userId: string) => {
   const { postId, rating } = payload;
   const existingRating = await prisma.ratings.findUnique({
     where: {

@@ -1,6 +1,7 @@
 import { PrismaClient, User } from "@prisma/client";
 import bcrypt from "bcrypt";
 import jwt, { JwtPayload } from "jsonwebtoken";
+import { userInfo } from "../../interface/ts/userInfo";
 import { makePaymentAsync, verifyPaymentAsync } from "./premiumUser";
 const prisma = new PrismaClient();
 const RegisterUser = async (payload: User) => {
@@ -75,7 +76,7 @@ const loginUser = async (payload: Partial<User>) => {
 const premiumUser = async (
   client_ip: string | undefined,
   user: JwtPayload,
-  payload
+  payload: userInfo
 ) => {
   const existingUser = await prisma.user.findUnique({
     where: { id: user.id },
@@ -129,8 +130,8 @@ const premiumUser = async (
   };
 };
 
-export const verifyPremiumPayment = async (user_id: string, user) => {
-  console.log(user_id, user.id, "this is perfect");
+export const verifyPremiumPayment = async (user_id: string, userId: string) => {
+  console.log(user_id, userId, "this is perfect");
   const verified = await verifyPaymentAsync(user_id);
   console.log(verified);
   if (!verified.length) {
@@ -144,10 +145,10 @@ export const verifyPremiumPayment = async (user_id: string, user) => {
     const result = await prisma.$transaction(async (tx) => {
       const subscription = await tx.subscription.update({
         where: {
-          userId: user.id,
+          userId: userId,
         },
         data: {
-          userId: user.id,
+          userId: userId,
           paymentStatus: true,
           paymentMethod: info.method || "ShurjoPay",
           subscriptedAt: new Date(info.date_time),
@@ -155,7 +156,7 @@ export const verifyPremiumPayment = async (user_id: string, user) => {
       });
 
       await tx.user.update({
-        where: { id: user.id },
+        where: { id: userId },
         data: {
           isPremium: true,
           subscription: {
@@ -208,10 +209,10 @@ const getSingleUser = async (userId: string) => {
   });
   return result;
 };
-const getSingleUserToken = async (user: string) => {
+const getSingleUserToken = async (userId: string) => {
   const result = await prisma.user.findUniqueOrThrow({
     where: {
-      id: user.id,
+      id: userId,
     },
     include: {
       subscription: true,
@@ -219,7 +220,7 @@ const getSingleUserToken = async (user: string) => {
   });
   return result;
 };
-const roleUpdate = async (userId: string, payload) => {
+const roleUpdate = async (userId: string, payload: Partial<User>) => {
   console.log(payload.role);
   const exitUser = await prisma.user.findFirstOrThrow({
     where: {
@@ -245,10 +246,10 @@ const deletedUser = async (userId: string) => {
   });
   return result;
 };
-const subscription = async (user: string) => {
+const subscription = async (userId: string) => {
   const result = await prisma.subscription.findUniqueOrThrow({
     where: {
-      userId: user.id,
+      userId: userId,
     },
     include: {
       user: true,
@@ -262,11 +263,11 @@ const refreshAccessToken = async (refreshToken: string) => {
     (process.env.REFRESH_TOKEN_SECRET as string) || "refresh-secret"
   ) as JwtPayload;
 
-  const user = await prisma.user.findUnique({
+  const existingUser = await prisma.user.findUnique({
     where: { id: decoded.id },
   });
 
-  if (!user) {
+  if (!existingUser) {
     throw new Error("User not found");
   }
 

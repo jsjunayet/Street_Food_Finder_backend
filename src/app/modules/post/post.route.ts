@@ -18,6 +18,7 @@ router.get(
   authorizeRole(["ADMIN", "USER"]),
   postController.postGetUserData
 );
+router.get("/gest", postController.postGetUserGestUser);
 router.get(
   "/single-retreive/:id",
   authorizeRole(["ADMIN", "USER"]),

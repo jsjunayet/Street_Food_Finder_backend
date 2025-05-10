@@ -18,7 +18,15 @@ const postCreateData = async (payload: Post, userId: string) => {
   return result;
 };
 const postGetData = async () => {
-  const result = await prisma.post.findMany();
+  const result = await prisma.post.findMany({
+    include: {
+      comments: {
+        include: {
+          user: true,
+        },
+      },
+    },
+  });
   return result;
 };
 const postGetUserData = async (user: any) => {
@@ -140,6 +148,48 @@ const postDeletedGetData = async (postId: string) => {
   });
   return result;
 };
+const postGetUserGestUser = async () => {
+  const posts = await prisma.post.findMany({
+    where: {
+      status: "approved",
+    },
+    include: {
+      votes: true,
+      comments: {
+        include: {
+          user: true,
+        },
+      },
+      ratings: true,
+      user: true,
+      category: true,
+    },
+  });
+
+  const result = posts.map((post) => {
+    const upVotes = post.votes.filter((v) => v.vote === "UP").length;
+    const downVotes = post.votes.filter((v) => v.vote === "DOWN").length;
+
+    const totalRatings = post.ratings.length;
+    const averageRating =
+      totalRatings > 0
+        ? post.ratings.reduce((sum, r) => sum + r.rating, 0) / totalRatings
+        : 0;
+
+    const totalComments = post.comments.length;
+
+    return {
+      ...post,
+      upVotes,
+      downVotes,
+      averageRating: Number(averageRating.toFixed(1)),
+      totalComments,
+    };
+  });
+
+  return result;
+};
+
 export const postService = {
   postCreateData,
   postGetData,
@@ -148,4 +198,5 @@ export const postService = {
   postApprovedGetData,
   postPremiumGetData,
   postGetUserData,
+  postGetUserGestUser,
 };
