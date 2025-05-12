@@ -83,6 +83,15 @@ const postDeletedGetData = catchAsync(async (req: Request, res: Response) => {
     data: result,
   });
 });
+const analyticsData = catchAsync(async (req: Request, res: Response) => {
+  const result = await postService.analyticsData();
+  sendResponse(res, {
+    statusCode: 200,
+    success: true,
+    message: "analytics Data successfully",
+    data: result,
+  });
+});
 export const postController = {
   postCreateData,
   postGetData,
@@ -92,4 +101,5 @@ export const postController = {
   postApprovedGetData,
   postGetUserData,
   postGetUserGestUser,
+  analyticsData,
 };

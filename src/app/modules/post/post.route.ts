@@ -18,6 +18,11 @@ router.get(
   authorizeRole(["ADMIN", "USER"]),
   postController.postGetUserData
 );
+router.get(
+  "/admin/analytics",
+  authorizeRole(["ADMIN"]),
+  postController.analyticsData
+);
 router.get("/gest", postController.postGetUserGestUser);
 router.get(
   "/single-retreive/:id",

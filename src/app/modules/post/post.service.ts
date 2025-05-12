@@ -1,4 +1,5 @@
 import { Post } from "@prisma/client";
+import { endOfMonth, format, startOfMonth, subMonths } from "date-fns";
 import { prisma } from "../../share/prismaClient";
 
 const postCreateData = async (payload: Post, userId: string) => {
@@ -20,6 +21,8 @@ const postCreateData = async (payload: Post, userId: string) => {
 const postGetData = async () => {
   const result = await prisma.post.findMany({
     include: {
+      user: true,
+      category: true,
       comments: {
         include: {
           user: true,
@@ -189,6 +192,64 @@ const postGetUserGestUser = async () => {
 
   return result;
 };
+const analyticsData = async () => {
+  const date = new Date();
+  const AnalyticsArray = [];
+  const visitorData = [];
+  for (let i = 5; i >= 0; i--) {
+    const MonthStart = startOfMonth(subMonths(date, i));
+    const MonthEnd = endOfMonth(subMonths(date, i));
+    const label = format(MonthStart, "MM");
+    const [PostCount, CommentCount, userCount] = await Promise.all([
+      prisma.post.count({
+        where: {
+          createdAt: {
+            gte: MonthStart,
+            lte: MonthEnd,
+          },
+        },
+      }),
+      prisma.comments.count({
+        where: {
+          createdAt: {
+            gte: MonthStart,
+            lte: MonthEnd,
+          },
+        },
+      }),
+      prisma.user.count({
+        where: {
+          createdAt: {
+            gte: MonthStart,
+            lte: MonthEnd,
+          },
+        },
+      }),
+    ]);
+    AnalyticsArray.push({
+      name: label,
+      posts: PostCount,
+      comments: CommentCount,
+    }),
+      visitorData.push({
+        name: label,
+        users: userCount,
+      });
+  }
+  const category = await prisma.category.findMany({
+    include: {
+      _count: {
+        select: { posts: true },
+      },
+    },
+  });
+  const categoryData = category.map((cat) => ({
+    name: cat.name,
+    value: cat._count.posts,
+  }));
+
+  return { AnalyticsArray, visitorData, categoryData };
+};
 
 export const postService = {
   postCreateData,
@@ -199,4 +260,5 @@ export const postService = {
   postPremiumGetData,
   postGetUserData,
   postGetUserGestUser,
+  analyticsData,
 };

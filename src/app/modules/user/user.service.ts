@@ -1,4 +1,6 @@
 import { PrismaClient, User } from "@prisma/client";
+import { endOfMonth, format, startOfMonth, subMonths } from "date-fns";
+
 import bcrypt from "bcrypt";
 import jwt, { JwtPayload } from "jsonwebtoken";
 import { userInfo } from "../../interface/ts/userInfo";
@@ -288,6 +290,55 @@ const refreshAccessToken = async (refreshToken: string) => {
 
   return { accessToken: newAccessToken };
 };
+const dashboardMetaData = async () => {
+  const now = new Date();
+  const monthlyStats = [];
+
+  for (let i = 5; i >= 0; i--) {
+    const monthStart = startOfMonth(subMonths(now, i));
+    const monthEnd = endOfMonth(subMonths(now, i));
+    const label = format(monthStart, "MMM");
+
+    const [postsCount, usersCount] = await Promise.all([
+      prisma.post.count({
+        where: {
+          createdAt: {
+            gte: monthStart,
+            lte: monthEnd,
+          },
+        },
+      }),
+      prisma.user.count({
+        where: {
+          createdAt: {
+            gte: monthStart,
+            lte: monthEnd,
+          },
+        },
+      }),
+    ]);
+
+    monthlyStats.push({ name: label, posts: postsCount, users: usersCount });
+  }
+
+  const [totalUsers, totalComments, totalPosts, premiumPosts] =
+    await Promise.all([
+      prisma.user.count(),
+      prisma.comments.count(),
+      prisma.post.count(),
+      prisma.post.count({ where: { isPremium: true } }),
+    ]);
+
+  return {
+    monthlyStats,
+    summary: {
+      users: totalUsers,
+      comments: totalComments,
+      posts: totalPosts,
+      premiumPosts: premiumPosts,
+    },
+  };
+};
 
 export const userService = {
   premiumUser,
@@ -301,4 +352,5 @@ export const userService = {
   refreshAccessToken,
   subscription,
   getSingleUserToken,
+  dashboardMetaData,
 };

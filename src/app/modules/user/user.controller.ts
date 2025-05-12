@@ -60,7 +60,7 @@ const RegisterUser = catchAsync(async (req: Request, res: Response) => {
   sendResponse(res, {
     statusCode: 201,
     success: true,
-    message: "All user Created successfully",
+    message: "user Created successfully",
     data: result,
   });
 });
@@ -69,7 +69,7 @@ const loginUser = catchAsync(async (req: Request, res: Response) => {
   sendResponse(res, {
     statusCode: 200,
     success: true,
-    message: "All user Created successfully",
+    message: "Login successfully",
     data: result,
   });
 });
@@ -121,7 +121,15 @@ const refreshAccessToken = catchAsync(async (req: Request, res: Response) => {
     data: result,
   });
 });
-
+const dashboardMetaData = catchAsync(async (req: Request, res: Response) => {
+  const result = await userService.dashboardMetaData();
+  sendResponse(res, {
+    statusCode: 200,
+    success: true,
+    message: "Dashboard meta data update",
+    data: result,
+  });
+});
 export const userController = {
   getAllUser,
   RegisterUser,
@@ -134,4 +142,5 @@ export const userController = {
   refreshAccessToken,
   subscription,
   getSingleUserToken,
+  dashboardMetaData,
 };

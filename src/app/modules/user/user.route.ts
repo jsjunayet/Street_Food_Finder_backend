@@ -47,5 +47,10 @@ router.delete(
   authorizeRole(["ADMIN"]),
   userController.deletedUser
 );
+router.get(
+  "/admin/metadata",
+  authorizeRole(["ADMIN"]),
+  userController.dashboardMetaData
+);
 
 export const userRoutes = router;
