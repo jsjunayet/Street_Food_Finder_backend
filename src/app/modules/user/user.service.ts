@@ -218,6 +218,8 @@ const getSingleUserToken = async (userId: string) => {
     },
     include: {
       subscription: true,
+      posts: true,
+      comments: true,
     },
   });
   return result;

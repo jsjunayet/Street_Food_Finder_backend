@@ -37,7 +37,7 @@ const categoryUpdateGetData = catchAsync(
   async (req: Request, res: Response) => {
     const categoryId = req.params.id;
     const result = await categoryService.categoryUpdateGetData(
-      req.body.name,
+      req.body.data,
       categoryId
     );
     sendResponse(res, {
