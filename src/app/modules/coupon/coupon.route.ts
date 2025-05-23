@@ -1,27 +1,26 @@
 import { Router } from "express";
 import { authorizeRole } from "../../middleware/authorizeRole";
-import { categoryController } from "./category.controller";
+import { couponController } from "./coupon.controller";
 
 const router = Router();
 router.post(
   "/create",
   authorizeRole(["ADMIN", "USER"]),
-  categoryController.categoryCreateData
+  couponController.couponCreateData
 );
-router.get("/all-retreive", categoryController.categoryGetData);
 router.get(
-  "/single-retreive/:id",
+  "/all-retreive",
   authorizeRole(["ADMIN", "USER"]),
-  categoryController.categorySingleGetData
+  couponController.couponGetData
 );
 router.patch(
   "/update/:id",
   authorizeRole(["ADMIN", "USER"]),
-  categoryController.categoryUpdateGetData
+  couponController.couponUpdateGetData
 );
 router.delete(
   "/deleted/:id",
   authorizeRole(["ADMIN", "USER"]),
-  categoryController.categoryDeletedGetData
+  couponController.couponDeletedGetData
 );
-export const categoryRoutes = router;
+export const couponRoutes = router;
