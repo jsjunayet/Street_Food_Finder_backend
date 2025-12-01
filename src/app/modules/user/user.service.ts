@@ -242,6 +242,24 @@ const roleUpdate = async (userId: string, payload: Partial<User>) => {
   });
   return result;
 };
+const UpdateUser = async (userId: string, payload: Partial<User>) => {
+  const exitUser = await prisma.user.findFirstOrThrow({
+    where: {
+      id: userId,
+    },
+  });
+
+  const result = await prisma.user.update({
+    where: {
+      id: userId,
+    },
+    data: {
+      name: payload.name,
+      image: payload.image,
+    },
+  });
+  return result;
+};
 const deletedUser = async (userId: string) => {
   const result = await prisma.user.delete({
     where: {
@@ -355,4 +373,5 @@ export const userService = {
   subscription,
   getSingleUserToken,
   dashboardMetaData,
+  UpdateUser,
 };
