@@ -8,6 +8,11 @@ router.post(
   authorizeRole(["ADMIN", "USER"]),
   postController.postCreateData
 );
+router.patch(
+  "/update/:id",
+  authorizeRole(["ADMIN", "USER"]),
+  postController.updatePostData
+);
 router.get(
   "/all-retreive-admin",
   authorizeRole(["ADMIN"]),
@@ -41,7 +46,7 @@ router.patch(
 );
 router.delete(
   "/deleted/:id",
-  authorizeRole(["ADMIN"]),
+  authorizeRole(["ADMIN", "USER"]),
   postController.postDeletedGetData
 );
 export const postRoutes = router;

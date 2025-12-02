@@ -22,6 +22,9 @@ role UserRole @default(USER)
 isPremium Boolean @default(false)
 image String?
 name String?
+phone String?
+location String?
+bio String?
 createdAt DateTime @default(now())
 updatedAt DateTime @updatedAt
 subscription subscription?

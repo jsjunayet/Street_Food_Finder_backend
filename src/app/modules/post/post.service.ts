@@ -18,10 +18,10 @@ const postCreateData = async (payload: Post, userId: string) => {
 
   return result;
 };
-const postUpdateData = async (
-  postId: string,
+const updatePostData = async (
+  userId: string,
   payload: Post,
-  userId: string
+  postId: string
 ) => {
   const { title, description, price, location, image, categoryId } = payload;
 
@@ -257,5 +257,5 @@ export const postService = {
   postGetUserData,
   postGetUserGestUser,
   analyticsData,
-  postUpdateData,
+  updatePostData,
 };

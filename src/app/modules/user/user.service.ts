@@ -202,13 +202,17 @@ const getAllUser = async () => {
 };
 const getSingleUser = async (userId: string) => {
   const result = await prisma.user.findUniqueOrThrow({
-    where: {
-      id: userId,
-    },
+    where: { id: userId },
     include: {
       subscription: true,
+      comments: {
+        include: {
+          post: true, // 👈 show the post for each comment
+        },
+      },
     },
   });
+
   return result;
 };
 const getSingleUserToken = async (userId: string) => {
@@ -256,6 +260,9 @@ const UpdateUser = async (userId: string, payload: Partial<User>) => {
     data: {
       name: payload.name,
       image: payload.image,
+      phone: payload.phone,
+      location: payload.location,
+      bio: payload.bio,
     },
   });
   return result;
