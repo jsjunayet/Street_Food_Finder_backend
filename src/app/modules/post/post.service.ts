@@ -18,6 +18,31 @@ const postCreateData = async (payload: Post, userId: string) => {
 
   return result;
 };
+const updatePostData = async (
+  userId: string,
+  payload: Post,
+  postId: string
+) => {
+  const { title, description, price, location, image, categoryId } = payload;
+
+  const result = await prisma.post.update({
+    where: {
+      id: postId,
+    },
+    data: {
+      title,
+      description,
+      price,
+      location,
+      image,
+      category: { connect: { id: categoryId } },
+      user: { connect: { id: userId } },
+    },
+  });
+
+  return result;
+};
+
 const postGetData = async () => {
   const result = await prisma.post.findMany({
     include: {
@@ -33,52 +58,23 @@ const postGetData = async () => {
   return result;
 };
 const postGetUserData = async (user: any) => {
-  const exitUser = await prisma.user.findUniqueOrThrow({
+  let Posts;
+  Posts = await prisma.post.findMany({
     where: {
-      id: user.id,
+      status: "approved",
     },
     include: {
-      subscription: true,
+      votes: true,
+      comments: {
+        include: {
+          user: true,
+        },
+      },
+      ratings: true,
+      user: true,
+      category: true,
     },
   });
-  let Posts;
-  if (exitUser.isPremium && exitUser.subscription?.paymentStatus) {
-    Posts = await prisma.post.findMany({
-      where: {
-        status: "approved",
-      },
-      include: {
-        votes: true,
-        comments: {
-          include: {
-            user: true,
-          },
-        },
-        ratings: true,
-        user: true,
-        category: true,
-      },
-    });
-  } else {
-    Posts = await prisma.post.findMany({
-      where: {
-        status: "approved",
-        isPremium: false,
-      },
-      include: {
-        votes: true,
-        comments: {
-          include: {
-            user: true,
-          },
-        },
-        ratings: true,
-        user: true,
-        category: true,
-      },
-    });
-  }
-
   const result = Posts.map((post) => {
     const upVotes = post.votes.filter((v) => v.vote === "UP").length;
     const downVotes = post.votes.filter((v) => v.vote === "DOWN").length;
@@ -261,4 +257,5 @@ export const postService = {
   postGetUserData,
   postGetUserGestUser,
   analyticsData,
+  updatePostData,
 };

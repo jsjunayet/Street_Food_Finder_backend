@@ -42,6 +42,12 @@ router.get(
   userController.getSingleUserToken
 );
 router.patch("/role/:id", authorizeRole(["ADMIN"]), userController.roleUpdate);
+router.patch(
+  "/user/:id",
+  authorizeRole(["ADMIN", "USER"]),
+  userController.UpdateUser
+);
+
 router.delete(
   "/deleted/:id",
   authorizeRole(["ADMIN"]),

@@ -14,6 +14,17 @@ const postCreateData = catchAsync(async (req: Request, res: Response) => {
     data: result,
   });
 });
+const updatePostData = catchAsync(async (req: Request, res: Response) => {
+  const userId = req.user as JwtPayload;
+  const postId = req.params.id;
+  const result = await postService.updatePostData(userId.id, req.body, postId);
+  sendResponse(res, {
+    statusCode: 200,
+    success: true,
+    message: "Update Post successfully",
+    data: result,
+  });
+});
 const postGetData = catchAsync(async (req: Request, res: Response) => {
   const result = await postService.postGetData();
   sendResponse(res, {
@@ -102,4 +113,5 @@ export const postController = {
   postGetUserData,
   postGetUserGestUser,
   analyticsData,
+  updatePostData,
 };

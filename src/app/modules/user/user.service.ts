@@ -202,13 +202,17 @@ const getAllUser = async () => {
 };
 const getSingleUser = async (userId: string) => {
   const result = await prisma.user.findUniqueOrThrow({
-    where: {
-      id: userId,
-    },
+    where: { id: userId },
     include: {
       subscription: true,
+      comments: {
+        include: {
+          post: true, // 👈 show the post for each comment
+        },
+      },
     },
   });
+
   return result;
 };
 const getSingleUserToken = async (userId: string) => {
@@ -238,6 +242,27 @@ const roleUpdate = async (userId: string, payload: Partial<User>) => {
     },
     data: {
       role: payload.role,
+    },
+  });
+  return result;
+};
+const UpdateUser = async (userId: string, payload: Partial<User>) => {
+  const exitUser = await prisma.user.findFirstOrThrow({
+    where: {
+      id: userId,
+    },
+  });
+
+  const result = await prisma.user.update({
+    where: {
+      id: userId,
+    },
+    data: {
+      name: payload.name,
+      image: payload.image,
+      phone: payload.phone,
+      location: payload.location,
+      bio: payload.bio,
     },
   });
   return result;
@@ -355,4 +380,5 @@ export const userService = {
   subscription,
   getSingleUserToken,
   dashboardMetaData,
+  UpdateUser,
 };
