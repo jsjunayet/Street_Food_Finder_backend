@@ -3,7 +3,16 @@ import { endOfMonth, format, startOfMonth, subMonths } from "date-fns";
 import { prisma } from "../../share/prismaClient";
 
 const postCreateData = async (payload: Post, userId: string) => {
-  const { title, description, price, location, image, categoryId } = payload;
+  const {
+    title,
+    description,
+    price,
+    location,
+    image,
+    categoryId,
+    restaurantName,
+    restaurantId,
+  } = payload;
   const result = await prisma.post.create({
     data: {
       title,
@@ -11,11 +20,12 @@ const postCreateData = async (payload: Post, userId: string) => {
       price,
       location,
       image,
+      restaurantName,
+      restaurantId,
       category: { connect: { id: categoryId } },
       user: { connect: { id: userId } },
     },
   });
-
   return result;
 };
 const updatePostData = async (

@@ -32,6 +32,7 @@ posts Post[]
 votes Votes[]
 ratings Ratings[]
 comments Comments[]
+restaurants Restaurant[]
 
 
 }
@@ -77,6 +78,8 @@ model Post {
   image       String
   category    Category @relation(fields: [categoryId], references: [id])
   categoryId  String
+ restaurantName String?
+ restaurantId String?
   isPremium   Boolean  @default(false)   
   approved    Boolean  @default(false)
   status      approveStatus  @default(pending)
@@ -136,6 +139,39 @@ model Ratings {
   updatedAt DateTime @updatedAt
   @@unique([userId, postId])
 }
+model Restaurant {
+  id          String      @id @default(uuid())
+  name        String
+  description String
+  images      String[]    // multiple images as array of strings
+  location    String
+  address     String
+  phone       String?
+  email       String?
+  website     String?
+  openingHours String?
+  specialties String[]    // array of specialties
+  highlights  String[]    // array of highlights
+  owner       User        @relation(fields: [ownerId], references: [id])
+  ownerId     String
+  menuItems   MenuItem[]
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+}
+
+model MenuItem {
+  id          String      @id @default(uuid())
+  name        String
+  description String
+  price       Float
+  image       String?
+  category    String?
+  restaurant  Restaurant  @relation(fields: [restaurantId], references: [id])
+  restaurantId String
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+}
+
 enum UserRole {
 USER
 ADMIN

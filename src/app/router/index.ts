@@ -4,6 +4,7 @@ import { commentRoute } from "../modules/comment/comment.route";
 import { couponRoutes } from "../modules/coupon/coupon.route";
 import { postRoutes } from "../modules/post/post.route";
 import { ratingRoute } from "../modules/rating/rating.route";
+import { restaurantRoutes } from "../modules/restaurant/restaurant.routes";
 import { userRoutes } from "../modules/user/user.route";
 import { voteRoute } from "../modules/votes/votes.route";
 
@@ -36,6 +37,10 @@ const AllRoutes = [
   {
     path: "/coupon",
     route: couponRoutes,
+  },
+  {
+    path: "/restaurant",
+    route: restaurantRoutes,
   },
 ];
 
